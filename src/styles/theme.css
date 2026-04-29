@@ -1,0 +1,66 @@
+/* ============================================================
+   FinSight AI — Theme System
+   Color roles:
+     --primary    → Deep navy — main brand/CTA color
+     --secondary  → Steel blue — accents, links
+     --accent     → Green — positive outcomes, growth
+     --negative   → Red — loss, debt, bad decisions
+     --risk       → Orange — caution, uncertain outcomes
+     --gold       → Yellow — badges, XP pops, awards only
+   ============================================================ */
+
+:root[data-theme="light"] {
+  --text:        #020a17;
+  --background:  #f4f6fa;
+  --primary:     #1c2d3f;
+  --secondary:   #8eb4e6;
+  --accent:      #4aba86;
+  --negative:    #8c3535;
+  --risk:        #7a5c1e;
+  --gold:        #e6a817;
+
+  --surface:     rgba(2, 10, 23, 0.03);
+  --surface-md:  rgba(2, 10, 23, 0.06);
+  --border:      rgba(2, 10, 23, 0.08);
+
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow:      0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md:   0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="dark"] {
+  --text:        #e8f0fd;
+  --background:  #05070a;
+  --primary:     #c0d1e3;
+  --secondary:   #193f71;
+  --accent:      #45b581;
+  --negative:    #d47070;
+  --risk:        #c4934a;
+  --gold:        #f0c040;
+
+  --surface:     rgba(232, 240, 253, 0.03);
+  --surface-md:  rgba(232, 240, 253, 0.06);
+  --border:      rgba(232, 240, 253, 0.08);
+
+  --shadow-sm:   none;
+  --shadow:      none;
+  --shadow-md:   none;
+}
+
+/* Pre-JS fallback */
+:root:not([data-theme]) {
+  --text:        #020a17;
+  --background:  #f4f6fa;
+  --primary:     #1c2d3f;
+  --secondary:   #8eb4e6;
+  --accent:      #4aba86;
+  --negative:    #8c3535;
+  --risk:        #7a5c1e;
+  --gold:        #e6a817;
+  --surface:     rgba(2, 10, 23, 0.03);
+  --surface-md:  rgba(2, 10, 23, 0.06);
+  --border:      rgba(2, 10, 23, 0.08);
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow:      0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md:   0 2px 8px rgba(0, 0, 0, 0.08);
+}
