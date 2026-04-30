@@ -67,8 +67,24 @@ const SAMPLE_DATA: OnboardingData = {
 export function OnboardingFlow() {
   const navigate = useNavigate()
   const setProfile = useFinancialProfileStore(s => s.setProfile)
+  const existingProfile = useFinancialProfileStore(s => s.profile)
   const [step, setStep] = useState<OnboardingStep>(0)
-  const [data, setData] = useState<OnboardingData>(defaultData)
+  const [data, setData] = useState<OnboardingData>(() => {
+  if (!existingProfile) return defaultData
+
+  return {
+    primaryIncome: existingProfile.income.primary,
+    additionalIncome: existingProfile.income.additional,
+    fixedExpenses: existingProfile.expenses.fixed,
+    variableExpenses: existingProfile.expenses.variable,
+    debt: existingProfile.debt.entries,
+    hasNoDebt: existingProfile.debt.hasNoDebt,
+    emergencySavings: existingProfile.savings.emergency,
+    otherSavings: existingProfile.savings.other,
+    investments: existingProfile.savings.investments,
+    retirement: existingProfile.savings.retirement,
+  }
+})
   const [autoFilled, setAutoFilled] = useState(false)
 
   function handleAutoFill() {
@@ -81,7 +97,7 @@ export function OnboardingFlow() {
     setData(prev => ({ ...prev, ...partial }))
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const totalIncome = data.primaryIncome + data.additionalIncome.reduce((s, i) => s + i.amount, 0)
     const totalExpenses = data.fixedExpenses + data.variableExpenses
     const debtTotal = data.hasNoDebt ? 0 : data.debt.reduce((s, d) => s + d.balance, 0)
@@ -106,8 +122,23 @@ export function OnboardingFlow() {
       },
       createdAt: Date.now(),
     }
-    setProfile(profile)
-    navigate('/dashboard')
+    const user = JSON.parse(localStorage.getItem('user') || 'null')
+
+if (user) {
+  await fetch('http://localhost:4000/profiles', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${user.token}`,
+  },
+  body: JSON.stringify({
+    profile: profile,
+  }),
+})
+}
+
+setProfile(profile)
+navigate('/dashboard')
   }
 
   const stepIndex = step === 'summary' ? 4 : (step as number)

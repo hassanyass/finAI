@@ -60,7 +60,7 @@ export function Welcome() {
               </Button>
             </>
           ) : (
-            <Button variant="primary" size="lg" onClick={() => navigate('/onboarding')}>
+            <Button variant="primary" size="lg" onClick={() => navigate('/auth')}>
               Get Started — Free <ArrowRight size={16} />
             </Button>
           )}
@@ -131,7 +131,7 @@ export function Welcome() {
             <Button variant="ghost" onClick={() => navigate('/coach')}>Coach</Button>
           </div>
         ) : (
-          <Button variant="primary" size="lg" onClick={() => navigate('/onboarding')}>
+          <Button variant="primary" size="lg" onClick={() => navigate('/auth')}>
             Build My Profile <ArrowRight size={16} />
           </Button>
         )}
