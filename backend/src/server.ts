@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import jwt from 'jsonwebtoken'
+import OpenAI from 'openai'
 
 dotenv.config()
 
@@ -15,6 +16,63 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+const SYSTEM_PROMPT = `
+You are FinSight AI, a professional financial coaching assistant.
+
+Rules:
+- Answer only the user question.
+- Use the injected user financial profile when relevant.
+- Keep replies concise and practical.
+- If information is missing, say what is missing instead of guessing.
+- Avoid legal/tax claims that require licensed professionals.
+`.trim()
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  return null
+}
+
+function formatCurrency(value: number | null): string {
+  if (value === null) return 'N/A'
+  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+}
+
+function formatPercent(value: number | null): string {
+  if (value === null) return 'N/A'
+  return `${(value * 100).toFixed(1)}%`
+}
+
+function formatProfile(profile: any): string {
+  if (!profile) return 'No financial profile is available for this user yet.'
+
+  const incomeTotal = toNumber(profile?.income?.total)
+  const expensesTotal = toNumber(profile?.expenses?.total)
+  const debtTotal = toNumber(profile?.debt?.total)
+  const savingsTotal = toNumber(profile?.savings?.total)
+  const monthlyCashFlow =
+    incomeTotal !== null && expensesTotal !== null ? incomeTotal - expensesTotal : null
+  const savingsRate =
+    incomeTotal && monthlyCashFlow !== null ? monthlyCashFlow / incomeTotal : null
+
+  return `
+User Financial Profile:
+- Monthly income: ${formatCurrency(incomeTotal)}
+- Monthly expenses: ${formatCurrency(expensesTotal)}
+- Monthly cash flow: ${formatCurrency(monthlyCashFlow)}
+- Total debt: ${formatCurrency(debtTotal)}
+- Total savings: ${formatCurrency(savingsTotal)}
+- Estimated savings rate: ${formatPercent(savingsRate)}
+  `.trim()
+}
+
+function shouldReturnGreeting(message: string): boolean {
+  const normalized = message.trim().toLowerCase()
+  return ['hi', 'hello', 'hey', 'yo'].includes(normalized)
+}
 
 function createToken(userId: string) {
   return jwt.sign(
@@ -186,6 +244,52 @@ app.get('/profiles/me', authMiddleware, async (req: any, res) => {
     }
 
     res.json({ profile })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+app.post('/chat/message', authMiddleware, async (req: any, res) => {
+  try {
+    const { message } = req.body
+    const userId = req.userId
+
+    if (typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({ error: 'Message is required' })
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(503).json({ error: 'OPENAI_API_KEY is not configured on backend' })
+    }
+
+    if (shouldReturnGreeting(message)) {
+      return res.json({ reply: 'Hi! How can I help with your finances today?' })
+    }
+
+    const profile = await prisma.financialProfile.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const profileText = formatProfile(profile?.data)
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: profileText },
+        { role: 'user', content: message.trim() },
+      ],
+    })
+
+    const reply = completion.choices[0]?.message?.content?.trim()
+
+    if (!reply) {
+      return res.status(502).json({ error: 'AI did not return a response' })
+    }
+
+    res.json({ reply })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
